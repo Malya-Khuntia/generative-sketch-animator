@@ -131,7 +131,3 @@ The application follows a simple but powerful workflow:
 6.  **Video Generation:** Veo processes the inputs, generates the animated video, and saves the final MP4 file to your GCS bucket.
 7.  **Return URL:** The public URL of the generated video in GCS is returned to the frontend as a JSON response.
 8.  **Display Result:** The frontend dynamically updates the page to display the final video.
-
-## 📄 License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.

@@ -37,7 +37,7 @@ Before you begin, ensure you have the following set up:
 3.  A **Google Cloud Project** with **Billing enabled**.
 4.  The following APIs **enabled** in your Google Cloud Project:
     - **Vertex AI API**
-    - **Generative Language API**
+    - **Generative Language API** (Un-restrict the Ai studio created key at https://console.cloud.google.com/apis/credentials)
 5.  A **Google Cloud Storage (GCS) Bucket**. For this project to work seamlessly, it is recommended to set the bucket's permissions to allow for public reads.
     - **Recommendation:** Set permissions so that `allUsers` have the `Storage Object Viewer` role.
 

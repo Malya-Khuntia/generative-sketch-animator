@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Sketch to Video Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-background: #0d1117;
+            --color-surface: rgba(22, 27, 34, 0.7);
+            --color-primary-accent: #22d3ee;
+            --color-secondary-accent: #f472b6;
+            --color-text-primary: #e6edf3;
+            --color-text-secondary: #7d8590;
+            --color-border: rgba(255, 255, 255, 0.1);
+            --color-border-hover: rgba(34, 211, 238, 0.5);
+            --border-radius: 16px;
+            --font-family-main: 'Poppins', sans-serif;
+        }
+
+        /* --- General Body & Typography --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family-main);
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 10% 10%, rgba(34, 211, 238, 0.15) 0, transparent 30%),
+                              radial-gradient(circle at 90% 80%, rgba(244, 114, 182, 0.15) 0, transparent 35%);
+        }
+
+        h1 {
+            font-size: 2.75rem; font-weight: 700; text-align: center;
+            background: linear-gradient(90deg, var(--color-primary-accent), var(--color-secondary-accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        h2.subtitle {
+            font-size: 1.1rem; font-weight: 400; color: var(--color-text-secondary);
+            margin-bottom: 2rem; text-align: center; max-width: 600px;
+        }
+        
+        h3 {
+            font-size: 1.1rem; font-weight: 600; color: var(--color-text-primary);
+            margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-border);
+        }
+
+        /* --- Main Layout --- */
+        .main-content {
+            display: grid; grid-template-columns: 1fr; gap: 2rem;
+            width: 100%; max-width: 1600px; margin-bottom: 2rem;
+        }
+        @media (min-width: 1024px) { .main-content { grid-template-columns: 1fr 1fr; } }
+
+        /* --- Sketch & Output Boxes --- */
+        .io-container { display: flex; flex-direction: column; width: 100%; }
+        .io-wrapper {
+            width: 100%; aspect-ratio: 16 / 9;
+            border-radius: var(--border-radius); border: 1px solid var(--color-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); background-color: #FFF;
+            overflow: hidden; position: relative;
+        }
+        canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+        canvas.erase-mode { cursor: cell; }
+        .output-video-wrapper video { width: 100%; height: 100%; display: block; object-fit: cover; }
+        .output-video-wrapper .placeholder, .output-video-wrapper .output-error {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; padding: 1rem; font-size: 1.1rem; color: var(--color-text-secondary);
+            background: #111;
+        }
+        .output-video-wrapper .output-error { color: var(--color-secondary-accent); font-weight: 600; word-break: break-word; }
+        .loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 60px; height: 60px; border: 5px solid var(--color-border);
+            border-top-color: var(--color-primary-accent); border-radius: 50%;
+            animation: spin 1s linear infinite; display: none;
+        }
+        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* --- Two-Column Controls Panel --- */
+        .controls-panel {
+            width: 100%; max-width: 1200px; padding: 1.5rem;
+            background: var(--color-surface); border: 1px solid var(--color-border);
+            border-radius: var(--border-radius); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            display: grid; grid-template-columns: 1fr; gap: 2rem;
+        }
+        @media (min-width: 768px) { .controls-panel { grid-template-columns: 1fr 1fr; } }
+        
+        .controls-column { display: flex; flex-direction: column; gap: 1rem; }
+        .controls-column h3 { margin-bottom: 0; }
+
+        .canvas-controls-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            flex-grow: 1;
+        }
+        .control-group {
+            background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;
+        }
+        .control-group.full-width { grid-column: 1 / -1; }
+        .control-group label { font-weight: 500; color: var(--color-text-secondary); font-size: 0.9rem;}
+        
+        .tool-buttons { display: flex; gap: 0.75rem; }
+        .tool-btn {
+            background: transparent; border: 2px solid var(--color-border); color: var(--color-text-secondary);
+            border-radius: 8px; width: 44px; height: 44px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;
+        }
+        .tool-btn:hover { border-color: var(--color-border-hover); color: var(--color-primary-accent); }
+        .tool-btn.active-tool {
+            border-color: var(--color-primary-accent); background-color: var(--color-primary-accent);
+            color: var(--color-background); box-shadow: 0 0 10px var(--color-primary-accent);
+        }
+        .tool-btn svg { width: 24px; height: 24px; }
+        
+        #colorPicker {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            width: 36px; height: 36px; background-color: transparent; border: none; cursor: pointer;
+        }
+        #colorPicker::-webkit-color-swatch { border-radius: 50%; border: 2px solid var(--color-border); }
+
+        .thickness-control { display: flex; align-items: center; gap: 8px; width: 100%;}
+        input[type="range"] { accent-color: var(--color-primary-accent); flex-grow: 1;}
+        
+        #clearBtn {
+            padding: 0.75rem; font-size: 1rem; font-weight: 500; cursor: pointer;
+            color: var(--color-text-secondary); background: rgba(0,0,0,0.2);
+            border: 1px solid var(--color-border); border-radius: 12px; transition: all 0.2s ease;
+        }
+        #clearBtn:hover:not(:disabled) { color: var(--color-secondary-accent); border-color: var(--color-secondary-accent); background-color: rgba(255, 58, 157, 0.1);}
+
+        #promptInput {
+            flex-grow: 1; width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--color-border);
+            border-radius: 12px; padding: 1rem; font-family: var(--font-family-main);
+            font-size: 1rem; color: var(--color-text-primary); resize: vertical; min-height: 120px;
+        }
+        #promptInput:focus { outline: none; border-color: var(--color-border-hover); box-shadow: 0 0 10px rgba(34, 211, 238, 0.3);}
+
+        #generateBtn {
+            padding: 1rem; font-size: 1.25rem; font-weight: 600; border-radius: 12px;
+            border: none; cursor: pointer; color: #000; background: var(--color-primary-accent);
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.5); transition: all 0.3s ease;
+        }
+        #generateBtn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 5px 25px rgba(34, 211, 238, 0.6); }
+        #generateBtn:disabled { background: var(--color-text-secondary); color: var(--color-background); cursor: not-allowed; box-shadow: none; }
+        
+        #status {
+            width: 100%; max-width: 1200px; min-height: 24px; text-align: center; margin-top: 1.5rem;
+            font-weight: 500; padding: 0.5rem; border-radius: 8px; transition: all 0.3s ease;
+        }
+        #status.error { color: var(--color-secondary-accent); background-color: rgba(244, 114, 182, 0.1); }
+        #status.loading { color: var(--color-primary-accent); background-color: rgba(34, 211, 238, 0.1); }
+    </style>
+</head>
+<body>
+    <h1>AI Sketch to Video Generator</h1>
+    <h2 class="subtitle">Draw a scene, describe the action, and let the AI bring your vision to life.</h2>
+
+    <div class="main-content">
+        <div class="io-container">
+             <h3>Your Creative Space</h3>
+            <div class="io-wrapper">
+                <canvas id="sketchCanvas" width="800" height="450"></canvas>
+            </div>
+        </div>
+        <div class="io-container">
+             <h3>The AI-Powered Result</h3>
+            <div id="outputWrapper" class="io-wrapper output-video-wrapper">
+                <video id="outputVideo" controls autoplay muted loop playsinline style="display: none;"></video>
+                <div id="outputPlaceholder" class="placeholder">Your generated video will appear here</div>
+                <div id="outputError" class="output-error" style="display: none;"></div>
+                <div id="loader" class="loader"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls-panel">
+        <div class="controls-column">
+            <h3>Drawing Tools</h3>
+            <div class="canvas-controls-container">
+                <div class="control-group">
+                    <label>Tools</label>
+                    <div class="tool-buttons">
+                        <button id="drawBtn" class="tool-btn active-tool" title="Draw">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/></svg>
+                        </button>
+                        <button id="eraseBtn" class="tool-btn" title="Erase">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8.086 2.207a2 2 0 0 1 2.828 0l3.879 3.879a2 2 0 0 1 0 2.828l-5.5 5.5A2 2 0 0 1 7.879 15H5.12a2 2 0 0 1-1.414-.586l-2.5-2.5a2 2 0 0 1 0-2.828zm2.121.707a1 1 0 0 0-1.414 0L4.16 7.547l5.293 5.293 4.633-4.633a1 1 0 0 0 0-1.414zM4.16 12.879l-1.03-1.03.952-.952 1.03 1.03z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="colorPicker">Color</label>
+                    <input type="color" id="colorPicker" value="#000000">
+                </div>
+                <div class="control-group full-width">
+                    <div class="thickness-control">
+                        <label for="thicknessSlider">Brush Size:</label>
+                        <input type="range" id="thicknessSlider" min="1" max="50" value="5">
+                        <span id="thicknessValue">5</span>
+                    </div>
+                </div>
+                <button id="clearBtn" class="full-width">Clear Canvas</button>
+            </div>
+        </div>
+
+        <div class="controls-column">
+            <h3>Animation Prompt</h3>
+            <textarea id="promptInput" rows="5" placeholder="e.g., 'cinematic, photorealistic, a car driving down a road, camera zooms in...'"></textarea>
+            <button id="generateBtn">✨ Generate Video</button>
+        </div>
+    </div>
+    
+    <div id="status" class="status-area"></div>
+
+    <script>
+        // --- Element Selection (from your working code) ---
+        const promptInput = document.getElementById('promptInput'); 
+        const canvas = document.getElementById('sketchCanvas');
+        const ctx = canvas.getContext('2d');
+        const clearBtn = document.getElementById('clearBtn');
+        const generateBtn = document.getElementById('generateBtn');
+        const eraseBtn = document.getElementById('eraseBtn');
+        const drawBtn = document.getElementById('drawBtn');
+        const colorPicker = document.getElementById('colorPicker');
+        const thicknessSlider = document.getElementById('thicknessSlider');
+        const thicknessValue = document.getElementById('thicknessValue');
+        const outputWrapper = document.getElementById('outputWrapper');
+        const outputVideo = document.getElementById('outputVideo');
+        const outputPlaceholder = document.getElementById('outputPlaceholder');
+        const outputError = document.getElementById('outputError');
+        const statusDiv = document.getElementById('status');
+        // --- Integration: Add loader from new UI ---
+        const loader = document.getElementById('loader');
+
+        // --- State Variables (from your working code) ---
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentMode = 'draw';
+        let drawColor = '#000000';
+        let drawLineWidth = 5; 
+        const eraseLineWidth = 30;
+
+        // --- Core Functions (from your working code, slightly adapted for new UI) ---
+        function initializeCanvas() {
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height); 
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            drawColor = '#000000';
+            colorPicker.value = '#000000';
+            drawLineWidth = 5;
+            thicknessSlider.value = 5;
+            thicknessValue.textContent = 5;
+
+            setDrawMode(); 
+            outputVideo.style.display = 'none';
+            outputVideo.src = '';
+            outputPlaceholder.style.display = 'flex';
+            outputError.style.display = 'none';
+            loader.style.display = 'none';
+            statusDiv.textContent = '';
+            statusDiv.className = 'status-area';
+            promptInput.value = '';
+            
+            // Re-enable all controls
+            const allControls = [generateBtn, clearBtn, drawBtn, eraseBtn, colorPicker, thicknessSlider, promptInput];
+            allControls.forEach(c => c.disabled = false);
+        }
+
+        function setDrawMode() {
+            currentMode = 'draw';
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = drawColor;
+            ctx.lineWidth = drawLineWidth;
+            canvas.classList.remove('erase-mode');
+            drawBtn.classList.add('active-tool');
+            eraseBtn.classList.remove('active-tool');
+        }
+
+        function setEraseMode() {
+            currentMode = 'erase';
+            ctx.globalCompositeOperation = 'destination-out'; // This works on a filled canvas
+            ctx.lineWidth = eraseLineWidth;
+            canvas.classList.add('erase-mode');
+            eraseBtn.classList.add('active-tool');
+            drawBtn.classList.remove('active-tool');
+        }
+        
+        function getPos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+            const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+        }
+
+        function startDrawing(e) {
+            if (e.touches) e.preventDefault();
+            isDrawing = true;
+            const pos = getPos(e);
+            [lastX, lastY] = [pos.x, pos.y];
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            // This logic creates a dot on single click, which is good.
+            ctx.fillStyle = (currentMode === 'draw') ? ctx.strokeStyle : 'rgba(0,0,0,1)';
+            ctx.arc(lastX, lastY, ctx.lineWidth / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            if (e.touches) e.preventDefault();
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            ctx.beginPath(); // Prevents drawing a line from the last point
+            ctx.moveTo(pos.x, pos.y);
+        }
+
+        function stopDrawing() {
+            if (isDrawing) { isDrawing = false; ctx.beginPath(); }
+        }
+
+        // --- Event Listeners (from your working code, integrated) ---
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+        
+        clearBtn.addEventListener('click', initializeCanvas);
+        drawBtn.addEventListener('click', setDrawMode);
+        eraseBtn.addEventListener('click', setEraseMode);
+        
+        colorPicker.addEventListener('input', (event) => {
+            drawColor = event.target.value;
+            if (currentMode === 'draw') { ctx.strokeStyle = drawColor; }
+            setDrawMode(); // Switch back to draw mode when a new color is picked
+        });
+        
+        thicknessSlider.addEventListener('input', (event) => {
+            drawLineWidth = event.target.value;
+            thicknessValue.textContent = drawLineWidth;
+            if (currentMode === 'draw') { ctx.lineWidth = drawLineWidth; }
+        });
+
+        generateBtn.addEventListener('click', async () => {
+            // Disable all controls
+            const allControls = [generateBtn, clearBtn, drawBtn, eraseBtn, colorPicker, thicknessSlider, promptInput];
+            allControls.forEach(c => c.disabled = true);
+            
+            // Update UI for loading state
+            statusDiv.textContent = 'Generating video... this may take a few minutes.';
+            statusDiv.className = 'status-area loading';
+            outputVideo.style.display = 'none';
+            outputError.style.display = 'none';
+            outputPlaceholder.style.display = 'none'; // Hide placeholder to show loader
+            loader.style.display = 'block'; // Show loader
+
+            const imageDataUrl = canvas.toDataURL('image/png');
+            const userPrompt = promptInput.value.trim();
+            const payload = { image_data: imageDataUrl };
+            if (userPrompt) { payload.prompt = userPrompt; }
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const result = await response.json();
+                if (response.ok && result.generated_video_url) {
+                    outputVideo.src = result.generated_video_url;
+                    outputVideo.load();
+                    outputVideo.style.display = 'block';
+                    outputPlaceholder.style.display = 'none';
+                    outputError.style.display = 'none';
+                    statusDiv.textContent = 'Video generated successfully!';
+                    statusDiv.className = 'status-area';
+                } else {
+                    const errorMsg = result.error || response.statusText || `Failed with status ${response.status}`;
+                    console.error('Generation failed:', errorMsg);
+                    statusDiv.textContent = `Error: ${errorMsg}`;
+                    statusDiv.className = 'status-area error';
+                    outputError.textContent = `Generation Failed: ${errorMsg}`;
+                    outputError.style.display = 'flex';
+                    outputPlaceholder.style.display = 'none';
+                    outputVideo.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Network or fetch error:', error);
+                const errorText = `Network error or failed to fetch: ${error.message || String(error)}`;
+                statusDiv.textContent = `Error: ${errorText}`;
+                statusDiv.className = 'status-area error';
+                outputError.textContent = `Error: ${errorText}`;
+                outputError.style.display = 'flex';
+                outputPlaceholder.style.display = 'none';
+                outputVideo.style.display = 'none';
+            } finally {
+                loader.style.display = 'none'; // Hide loader
+                // Re-enable all controls
+                allControls.forEach(c => c.disabled = false);
+            }
+        });
+
+        window.onload = initializeCanvas;
+    </script>
+</body>
+</html>

@@ -4,6 +4,7 @@ import time
 import base64
 import uuid
 import logging
+import datetime  # Import the datetime module
 import PIL.Image
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
@@ -36,26 +37,25 @@ if missing_vars:
     logger.error(f"Missing environment variables: {', '.join(missing_vars)}")
     raise RuntimeError(f"Missing environment variables: {', '.join(missing_vars)}")
 
-# Fetch Gemini API key (try .env first for local, then Secret Manager for Cloud Run)
-# --- NEW: Securely Fetch API Key from Secret Manager ---
+# --- Securely Fetch API Key from Secret Manager ---
 def get_gemini_api_key():
     """Fetches the Gemini API key from Google Cloud Secret Manager."""
     try:
         client = secretmanager.SecretManagerServiceClient()
-        # The resource name of the secret version.
         name = f"projects/{PROJECT_ID}/secrets/gemini-api-key/versions/latest"
         response = client.access_secret_version(request={"name": name})
         return response.payload.data.decode("UTF-8")
     except Exception as e:
-        # This provides a helpful error if the secret can't be fetched
         print(f"FATAL: Could not fetch secret 'gemini-api-key' from Secret Manager: {e}")
         print("Ensure the secret exists and the service account has 'Secret Manager Secret Accessor' role.")
         return None
 
 logger.info("Fetching Gemini API key...")
 API_KEY = get_gemini_api_key()
-# Log partial key for debugging (first 5 and last 5 chars)
-logger.info(f"API key retrieved: {API_KEY[:5]}...{API_KEY[-5:]}")
+if API_KEY:
+    logger.info(f"API key retrieved: {API_KEY[:5]}...{API_KEY[-5:]}")
+else:
+    logger.error("API key could not be retrieved. The application may not function correctly.")
 
 # Initialize clients
 try:
@@ -80,7 +80,7 @@ except Exception as e:
     gcs_client = None
 
 # --- Helper Function to Upload to GCS ---
-def upload_bytes_to_gcs(image_bytes: bytes, bucket_name: str, destination_blob_name: str) -> str:
+def upload_to_gcs(data: bytes or str, bucket_name: str, destination_blob_name: str, content_type: str) -> str:
     if not gcs_client:
         logger.error("GCS client is not initialized")
         raise ConnectionError("GCS client is not initialized")
@@ -88,9 +88,14 @@ def upload_bytes_to_gcs(image_bytes: bytes, bucket_name: str, destination_blob_n
     try:
         bucket = gcs_client.bucket(bucket_name)
         blob = bucket.blob(destination_blob_name)
-        blob.upload_from_string(image_bytes, content_type='image/png')
+        
+        if isinstance(data, str):
+            blob.upload_from_string(data, content_type=content_type)
+        else: # bytes
+            blob.upload_from_string(data, content_type=content_type)
+            
         gcs_uri = f"gs://{bucket_name}/{destination_blob_name}"
-        logger.info(f"Image uploaded to {gcs_uri}")
+        logger.info(f"Data uploaded to {gcs_uri}")
         return gcs_uri
     except google_exceptions.GoogleAPIError as e:
         logger.error(f"GCS upload failed: {e}")
@@ -114,15 +119,36 @@ def generate_video_from_sketch():
     base64_image_data = request.json['image_data']
     user_prompt = request.json.get('prompt', '').strip()
 
-    # --- Step 1: Generate Image with Gemini ---
+    # --- NEW: Create a unique folder for this generation job ---
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    job_id = str(uuid.uuid4())
+    job_folder_path = f"generations/{timestamp}_{job_id[:8]}"
+    logger.info(f"Creating new job folder in GCS: {job_folder_path}")
+
+    # Decode the image data once
+    if ',' in base64_image_data:
+        base64_data = base64_image_data.split(',', 1)[1]
+    else:
+        base64_data = base64_image_data
+    image_bytes = base64.b64decode(base64_data)
+
+    # --- Step 1: Store original sketch and prompt in the new job folder ---
+    try:
+        logger.info(f"Uploading original user inputs for job {job_folder_path}")
+        sketch_blob_name = f"{job_folder_path}/sketches/user-sketch.png"
+        prompt_blob_name = f"{job_folder_path}/prompts/user-prompt.txt"
+        
+        upload_to_gcs(image_bytes, GCS_BUCKET_NAME, sketch_blob_name, 'image/png')
+        upload_to_gcs(user_prompt or "No prompt provided.", GCS_BUCKET_NAME, prompt_blob_name, 'text/plain')
+        
+    except Exception as e:
+        # Log the error but continue, as this is for archival and not critical for generation
+        logger.error(f"Failed to upload original assets to GCS: {e}")
+        pass
+
+    # --- Step 2: Generate Image with Gemini ---
     try:
         logger.info("Generating image from sketch with Gemini")
-        if ',' in base64_image_data:
-            base64_data = base64_image_data.split(',', 1)[1]
-        else:
-            base64_data = base64_image_data
-        
-        image_bytes = base64.b64decode(base64_data)
         sketch_pil_image = PIL.Image.open(io.BytesIO(image_bytes))
 
         default_prompt = "Convert this sketch into a photorealistic image as if it were taken from a real DSLR camera. The elements and objects should look real."
@@ -158,14 +184,13 @@ def generate_video_from_sketch():
         logger.error(f"Unexpected error in image generation: {e}")
         return jsonify({"error": f"Unexpected error in image generation: {e}"}), 500
 
-    # --- Step 2 & 3: Upload Image to GCS and Generate Video with Veo ---
+    # --- Step 3 & 4: Upload Image to GCS and Generate Video with Veo ---
     try:
-        logger.info("Uploading image to GCS")
-        unique_id = uuid.uuid4()
-        image_blob_name = f"images/generated-image-{unique_id}.png"
-        output_gcs_prefix = f"gs://{GCS_BUCKET_NAME}/videos/"
+        logger.info("Uploading generated image to GCS")
+        image_blob_name = f"{job_folder_path}/images/generated-image.png"
+        output_gcs_prefix = f"gs://{GCS_BUCKET_NAME}/{job_folder_path}/videos/"
 
-        image_gcs_uri = upload_bytes_to_gcs(generated_image_bytes, GCS_BUCKET_NAME, image_blob_name)
+        image_gcs_uri = upload_to_gcs(generated_image_bytes, GCS_BUCKET_NAME, image_blob_name, 'image/png')
         
         logger.info("Calling Veo to generate video")
         default_video_prompt = "Animate this image. Add subtle, cinematic motion."
@@ -185,7 +210,7 @@ def generate_video_from_sketch():
             ),
         )
 
-        # TODO: For production, refactor to async (e.g., return job ID and poll via separate endpoint)
+        # For production, refactor to async (e.g., return job ID and poll via separate endpoint)
         timeout_seconds = 300
         start_time = time.time()
         while not operation.done:
@@ -194,7 +219,7 @@ def generate_video_from_sketch():
                 raise TimeoutError("Video generation timed out")
             time.sleep(15)
             operation = veo_video_client.operations.get(operation)
-            logger.info(f"Video generation status: {operation}")
+            logger.info(f"Video generation status: {operation.metadata.state.name if operation.metadata else 'pending'}")
 
         logger.info("Video generation operation complete")
         
@@ -225,5 +250,5 @@ def generate_video_from_sketch():
         return jsonify({"error": f"Unexpected error in video generation: {e}"}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8080))  # Use PORT env var or default to 8080
+    port = int(os.environ.get("PORT", 8080))
     app.run(debug=True, host='0.0.0.0', port=port)

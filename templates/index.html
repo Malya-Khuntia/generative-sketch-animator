@@ -136,13 +136,37 @@
 
         .thickness-control { display: flex; align-items: center; gap: 8px; width: 100%;}
         input[type="range"] { accent-color: var(--color-primary-accent); flex-grow: 1;}
-        
-        #clearBtn {
-            padding: 0.75rem; font-size: 1rem; font-weight: 500; cursor: pointer;
-            color: var(--color-text-secondary); background: rgba(0,0,0,0.2);
-            border: 1px solid var(--color-border); border-radius: 12px; transition: all 0.2s ease;
+
+        /* --- NEW: Button Group for Clear/Upload --- */
+        .button-group {
+            grid-column: 1 / -1; /* Span full width */
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
         }
-        #clearBtn:hover:not(:disabled) { color: var(--color-secondary-accent); border-color: var(--color-secondary-accent); background-color: rgba(255, 58, 157, 0.1);}
+        .button-group > * {
+            padding: 0.75rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            color: var(--color-text-secondary);
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+        .button-group > *:hover:not(:disabled) {
+            color: var(--color-secondary-accent);
+            border-color: var(--color-secondary-accent);
+            background-color: rgba(255, 58, 157, 0.1);
+        }
+        /* Style for upload button hover */
+        .button-group label:hover:not(:disabled) {
+             color: var(--color-primary-accent);
+             border-color: var(--color-primary-accent);
+             background-color: rgba(34, 211, 238, 0.1);
+        }
 
         #promptInput {
             flex-grow: 1; width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--color-border);
@@ -215,7 +239,12 @@
                         <span id="thicknessValue">5</span>
                     </div>
                 </div>
-                <button id="clearBtn" class="full-width">Clear Canvas</button>
+                <!-- MODIFIED: Button group for clear and upload -->
+                <div class="button-group">
+                    <button id="clearBtn">Clear Canvas</button>
+                    <label for="uploadImageInput" class="upload-btn">Upload Image</label>
+                    <input type="file" id="uploadImageInput" accept="image/*" style="display: none;">
+                </div>
             </div>
         </div>
 
@@ -229,7 +258,7 @@
     <div id="status" class="status-area"></div>
 
     <script>
-        // --- Element Selection (from your working code) ---
+        // --- Element Selection ---
         const promptInput = document.getElementById('promptInput'); 
         const canvas = document.getElementById('sketchCanvas');
         const ctx = canvas.getContext('2d');
@@ -245,19 +274,20 @@
         const outputPlaceholder = document.getElementById('outputPlaceholder');
         const outputError = document.getElementById('outputError');
         const statusDiv = document.getElementById('status');
-        // --- Integration: Add loader from new UI ---
         const loader = document.getElementById('loader');
+        // --- NEW: Select upload input ---
+        const uploadImageInput = document.getElementById('uploadImageInput');
 
-        // --- State Variables (from your working code) ---
+        // --- State Variables ---
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
         let currentMode = 'draw';
         let drawColor = '#000000';
         let drawLineWidth = 5; 
-        const eraseLineWidth = 30;
+        const eraseLineWidth = 30; // Kept erase width constant for simplicity
 
-        // --- Core Functions (from your working code, slightly adapted for new UI) ---
+        // --- Core Functions ---
         function initializeCanvas() {
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height); 
@@ -279,8 +309,7 @@
             statusDiv.className = 'status-area';
             promptInput.value = '';
             
-            // Re-enable all controls
-            const allControls = [generateBtn, clearBtn, drawBtn, eraseBtn, colorPicker, thicknessSlider, promptInput];
+            const allControls = [generateBtn, clearBtn, drawBtn, eraseBtn, colorPicker, thicknessSlider, promptInput, uploadImageInput];
             allControls.forEach(c => c.disabled = false);
         }
 
@@ -296,7 +325,7 @@
 
         function setEraseMode() {
             currentMode = 'erase';
-            ctx.globalCompositeOperation = 'destination-out'; // This works on a filled canvas
+            ctx.globalCompositeOperation = 'destination-out';
             ctx.lineWidth = eraseLineWidth;
             canvas.classList.add('erase-mode');
             eraseBtn.classList.add('active-tool');
@@ -319,7 +348,6 @@
             [lastX, lastY] = [pos.x, pos.y];
             ctx.beginPath();
             ctx.moveTo(lastX, lastY);
-            // This logic creates a dot on single click, which is good.
             ctx.fillStyle = (currentMode === 'draw') ? ctx.strokeStyle : 'rgba(0,0,0,1)';
             ctx.arc(lastX, lastY, ctx.lineWidth / 2, 0, Math.PI * 2);
             ctx.fill();
@@ -333,7 +361,7 @@
             const pos = getPos(e);
             ctx.lineTo(pos.x, pos.y);
             ctx.stroke();
-            ctx.beginPath(); // Prevents drawing a line from the last point
+            ctx.beginPath();
             ctx.moveTo(pos.x, pos.y);
         }
 
@@ -341,7 +369,47 @@
             if (isDrawing) { isDrawing = false; ctx.beginPath(); }
         }
 
-        // --- Event Listeners (from your working code, integrated) ---
+        // --- NEW: Function to handle image upload ---
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Clear canvas first
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Calculate aspect ratio to fit image inside canvas
+                    const canvasAspectRatio = canvas.width / canvas.height;
+                    const imgAspectRatio = img.width / img.height;
+                    let drawWidth, drawHeight, offsetX, offsetY;
+
+                    if (imgAspectRatio > canvasAspectRatio) {
+                        drawWidth = canvas.width;
+                        drawHeight = canvas.width / imgAspectRatio;
+                        offsetX = 0;
+                        offsetY = (canvas.height - drawHeight) / 2;
+                    } else {
+                        drawHeight = canvas.height;
+                        drawWidth = canvas.height * imgAspectRatio;
+                        offsetY = 0;
+                        offsetX = (canvas.width - drawWidth) / 2;
+                    }
+                    
+                    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            // Reset file input to allow uploading the same file again
+            event.target.value = null;
+        }
+
+        // --- Event Listeners ---
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseup', stopDrawing);
@@ -357,7 +425,7 @@
         colorPicker.addEventListener('input', (event) => {
             drawColor = event.target.value;
             if (currentMode === 'draw') { ctx.strokeStyle = drawColor; }
-            setDrawMode(); // Switch back to draw mode when a new color is picked
+            setDrawMode();
         });
         
         thicknessSlider.addEventListener('input', (event) => {
@@ -366,18 +434,19 @@
             if (currentMode === 'draw') { ctx.lineWidth = drawLineWidth; }
         });
 
+        // --- NEW: Add event listener for the file input ---
+        uploadImageInput.addEventListener('change', handleImageUpload);
+
         generateBtn.addEventListener('click', async () => {
-            // Disable all controls
-            const allControls = [generateBtn, clearBtn, drawBtn, eraseBtn, colorPicker, thicknessSlider, promptInput];
+            const allControls = [generateBtn, clearBtn, drawBtn, eraseBtn, colorPicker, thicknessSlider, promptInput, uploadImageInput];
             allControls.forEach(c => c.disabled = true);
             
-            // Update UI for loading state
             statusDiv.textContent = 'Generating video... this may take a few minutes.';
             statusDiv.className = 'status-area loading';
             outputVideo.style.display = 'none';
             outputError.style.display = 'none';
-            outputPlaceholder.style.display = 'none'; // Hide placeholder to show loader
-            loader.style.display = 'block'; // Show loader
+            outputPlaceholder.style.display = 'none';
+            loader.style.display = 'block';
 
             const imageDataUrl = canvas.toDataURL('image/png');
             const userPrompt = promptInput.value.trim();
@@ -419,8 +488,7 @@
                 outputPlaceholder.style.display = 'none';
                 outputVideo.style.display = 'none';
             } finally {
-                loader.style.display = 'none'; // Hide loader
-                // Re-enable all controls
+                loader.style.display = 'none';
                 allControls.forEach(c => c.disabled = false);
             }
         });

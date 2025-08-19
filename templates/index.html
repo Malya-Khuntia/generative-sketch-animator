@@ -20,10 +20,7 @@
             --border-radius: 16px;
             --font-family-main: 'Poppins', sans-serif;
         }
-
-        /* --- General Body & Typography --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: var(--font-family-main);
             background-color: var(--color-background);
@@ -37,158 +34,109 @@
             background-image: radial-gradient(circle at 10% 10%, rgba(34, 211, 238, 0.15) 0, transparent 30%),
                               radial-gradient(circle at 90% 80%, rgba(244, 114, 182, 0.15) 0, transparent 35%);
         }
-
-        h1 {
-            font-size: 2.75rem; font-weight: 700; text-align: center;
-            background: linear-gradient(90deg, var(--color-primary-accent), var(--color-secondary-accent));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-
-        h2.subtitle {
-            font-size: 1.1rem; font-weight: 400; color: var(--color-text-secondary);
-            margin-bottom: 2rem; text-align: center; max-width: 600px;
-        }
-        
-        h3 {
-            font-size: 1.1rem; font-weight: 600; color: var(--color-text-primary);
-            margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-border);
-        }
-
-        /* --- Main Layout --- */
-        .main-content {
-            display: grid; grid-template-columns: 1fr; gap: 2rem;
-            width: 100%; max-width: 1600px; margin-bottom: 2rem;
-        }
+        h1 { font-size: 2.75rem; font-weight: 700; text-align: center; background: linear-gradient(90deg, var(--color-primary-accent), var(--color-secondary-accent)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
+        h2.subtitle { font-size: 1.1rem; font-weight: 400; color: var(--color-text-secondary); margin-bottom: 2rem; text-align: center; max-width: 600px; }
+        h3 { font-size: 1.1rem; font-weight: 600; color: var(--color-text-primary); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-border); }
+        .main-content { display: grid; grid-template-columns: 1fr; gap: 2rem; width: 100%; max-width: 1600px; margin-bottom: 2rem; }
         @media (min-width: 1024px) { .main-content { grid-template-columns: 1fr 1fr; } }
-
-        /* --- Sketch & Output Boxes --- */
         .io-container { display: flex; flex-direction: column; width: 100%; }
-        .io-wrapper {
-            width: 100%; aspect-ratio: 16 / 9;
-            border-radius: var(--border-radius); border: 1px solid var(--color-border);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); background-color: #FFF;
-            overflow: hidden; position: relative;
-        }
-        canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
-        canvas.erase-mode { cursor: cell; }
+        .io-wrapper { width: 100%; aspect-ratio: 16 / 9; border-radius: var(--border-radius); border: 1px solid var(--color-border); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); overflow: hidden; position: relative; background-color: #000; }
+        canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; background-color: #FFF; }
         .output-video-wrapper video { width: 100%; height: 100%; display: block; object-fit: cover; }
-        .output-video-wrapper .placeholder, .output-video-wrapper .output-error {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            text-align: center; padding: 1rem; font-size: 1.1rem; color: var(--color-text-secondary);
-            background: #111;
-        }
-        .output-video-wrapper .output-error { color: var(--color-secondary-accent); font-weight: 600; word-break: break-word; }
-        .loader {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 60px; height: 60px; border: 5px solid var(--color-border);
-            border-top-color: var(--color-primary-accent); border-radius: 50%;
-            animation: spin 1s linear infinite; display: none;
-        }
-        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-
-        /* --- Two-Column Controls Panel --- */
-        .controls-panel {
-            width: 100%; max-width: 1200px; padding: 1.5rem;
-            background: var(--color-surface); border: 1px solid var(--color-border);
-            border-radius: var(--border-radius); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            display: grid; grid-template-columns: 1fr; gap: 2rem;
-        }
+        .placeholder, .output-error { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem; color: var(--color-text-secondary); }
+        .output-error { color: var(--color-secondary-accent); font-weight: 600; word-break: break-word; }
+        .loader-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
+        .loader-animation { width: 80px; height: 80px; animation: rotate-container 2s linear infinite; }
+        .loader-track, .loader-spinner { fill: none; stroke-width: 6px; transform-origin: 50% 50%; }
+        .loader-track { stroke: var(--color-border); opacity: 0.3; }
+        .loader-spinner { stroke: var(--color-primary-accent); stroke-linecap: round; stroke-dasharray: 264; stroke-dashoffset: 264; animation: spin-arc 1.5s ease-in-out infinite; }
+        @keyframes rotate-container { to { transform: rotate(360deg); } }
+        @keyframes spin-arc { 0% { stroke-dashoffset: 264; } 50% { stroke-dashoffset: 60; } 100% { stroke-dashoffset: 264; } }
+        #loaderText { font-size: 1rem; font-weight: 500; color: var(--color-primary-accent); text-shadow: 0 0 10px rgba(34, 211, 238, 0.5); transition: opacity 0.3s ease-in-out; }
+        .image-selection-wrapper { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; width: 100%; height: 100%; padding: 1rem; align-items: center; background-color: #000; }
+        .image-option { width: 100%; height: 100%; border: 3px solid transparent; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.2s ease; position: relative; }
+        .image-option img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .image-option:hover { border-color: var(--color-border-hover); transform: scale(1.05); }
+        .image-option.selected { border-color: var(--color-primary-accent); box-shadow: 0 0 20px var(--color-primary-accent); transform: scale(1.05); }
+        .controls-panel { width: 100%; max-width: 1200px; padding: 1.5rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--border-radius); backdrop-filter: blur(12px); display: grid; grid-template-columns: 1fr; gap: 2rem; }
         @media (min-width: 768px) { .controls-panel { grid-template-columns: 1fr 1fr; } }
-        
-        .controls-column { display: flex; flex-direction: column; gap: 1rem; }
+        .controls-column { display: flex; flex-direction: column; gap: 1rem; position: relative; }
         .controls-column h3 { margin-bottom: 0; }
-
-        .canvas-controls-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            flex-grow: 1;
-        }
-        .control-group {
-            background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;
-        }
-        .control-group.full-width { grid-column: 1 / -1; }
+        .canvas-controls-container { display: grid; grid-template-columns: 1fr; gap: 1rem; flex-grow: 1; }
+        .top-controls-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .control-group { background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; }
         .control-group label { font-weight: 500; color: var(--color-text-secondary); font-size: 0.9rem;}
-        
         .tool-buttons { display: flex; gap: 0.75rem; }
-        .tool-btn {
-            background: transparent; border: 2px solid var(--color-border); color: var(--color-text-secondary);
-            border-radius: 8px; width: 44px; height: 44px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;
-        }
+        .tool-btn { background: transparent; border: 2px solid var(--color-border); color: var(--color-text-secondary); border-radius: 8px; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
         .tool-btn:hover { border-color: var(--color-border-hover); color: var(--color-primary-accent); }
-        .tool-btn.active-tool {
-            border-color: var(--color-primary-accent); background-color: var(--color-primary-accent);
-            color: var(--color-background); box-shadow: 0 0 10px var(--color-primary-accent);
-        }
+        .tool-btn.active-tool { border-color: var(--color-primary-accent); background-color: var(--color-primary-accent); color: var(--color-background); box-shadow: 0 0 10px var(--color-primary-accent); }
         .tool-btn svg { width: 24px; height: 24px; }
-        
-        #colorPicker {
-            -webkit-appearance: none; -moz-appearance: none; appearance: none;
-            width: 36px; height: 36px; background-color: transparent; border: none; cursor: pointer;
-        }
+        #colorPicker { -webkit-appearance: none; -moz-appearance: none; appearance: none; width: 36px; height: 36px; background-color: transparent; border: none; cursor: pointer; }
         #colorPicker::-webkit-color-swatch { border-radius: 50%; border: 2px solid var(--color-border); }
-
+        #imageCount { background: rgba(0,0,0,0.4); border: 1px solid var(--color-border); color: var(--color-text-primary); padding: 0.5rem; border-radius: 8px; font-family: var(--font-family-main); width: 100%; cursor: pointer; }
+        #imageCount:focus { outline: none; border-color: var(--color-border-hover); }
         .thickness-control { display: flex; align-items: center; gap: 8px; width: 100%;}
         input[type="range"] { accent-color: var(--color-primary-accent); flex-grow: 1;}
-
-        /* --- NEW: Button Group for Clear/Upload --- */
-        .button-group {
-            grid-column: 1 / -1; /* Span full width */
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-        .button-group > * {
-            padding: 0.75rem;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            text-align: center;
-            color: var(--color-text-secondary);
-            background: rgba(0,0,0,0.2);
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
-            transition: all 0.2s ease;
-        }
-        .button-group > *:hover:not(:disabled) {
-            color: var(--color-secondary-accent);
-            border-color: var(--color-secondary-accent);
-            background-color: rgba(255, 58, 157, 0.1);
-        }
-        /* Style for upload button hover */
-        .button-group label:hover:not(:disabled) {
-             color: var(--color-primary-accent);
-             border-color: var(--color-primary-accent);
-             background-color: rgba(34, 211, 238, 0.1);
-        }
-
-        #promptInput {
-            flex-grow: 1; width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--color-border);
-            border-radius: 12px; padding: 1rem; font-family: var(--font-family-main);
-            font-size: 1rem; color: var(--color-text-primary); resize: vertical; min-height: 120px;
-        }
+        .button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .button-group > * { padding: 0.75rem; font-size: 1rem; font-weight: 500; cursor: pointer; text-align: center; color: var(--color-text-secondary); background: rgba(0,0,0,0.2); border: 1px solid var(--color-border); border-radius: 12px; transition: all 0.2s ease; }
+        .button-group > *:hover:not(:disabled) { color: var(--color-secondary-accent); border-color: var(--color-secondary-accent); background-color: rgba(255, 58, 157, 0.1); }
+        .button-group label:hover:not(:disabled) { color: var(--color-primary-accent); border-color: var(--color-primary-accent); background-color: rgba(34, 211, 238, 0.1); }
+        #promptInput { flex-grow: 1; width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--color-border); border-radius: 12px; padding: 1rem; font-family: var(--font-family-main); font-size: 1rem; color: var(--color-text-primary); resize: vertical; min-height: 120px; }
         #promptInput:focus { outline: none; border-color: var(--color-border-hover); box-shadow: 0 0 10px rgba(34, 211, 238, 0.3);}
-
-        #generateBtn {
-            padding: 1rem; font-size: 1.25rem; font-weight: 600; border-radius: 12px;
-            border: none; cursor: pointer; color: #000; background: var(--color-primary-accent);
-            box-shadow: 0 0 20px rgba(34, 211, 238, 0.5); transition: all 0.3s ease;
-        }
-        #generateBtn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 5px 25px rgba(34, 211, 238, 0.6); }
-        #generateBtn:disabled { background: var(--color-text-secondary); color: var(--color-background); cursor: not-allowed; box-shadow: none; }
-        
-        #status {
-            width: 100%; max-width: 1200px; min-height: 24px; text-align: center; margin-top: 1.5rem;
-            font-weight: 500; padding: 0.5rem; border-radius: 8px; transition: all 0.3s ease;
-        }
+        .generation-buttons { display: flex; flex-direction: column; gap: 1rem; }
+        .gen-btn { padding: 1rem; font-size: 1.25rem; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; color: #000; background: var(--color-primary-accent); box-shadow: 0 0 20px rgba(34, 211, 238, 0.5); transition: all 0.3s ease; }
+        .gen-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 5px 25px rgba(34, 211, 238, 0.6); }
+        .gen-btn:disabled { background: var(--color-text-secondary); color: var(--color-background); cursor: not-allowed; box-shadow: none; }
+        #generateVideoBtn { background: var(--color-secondary-accent); box-shadow: 0 0 20px rgba(244, 114, 182, 0.5); }
+        #generateVideoBtn:hover:not(:disabled) { box-shadow: 0 5px 25px rgba(244, 114, 182, 0.6); }
+        #status { width: 100%; max-width: 1200px; min-height: 24px; text-align: center; margin-top: 1.5rem; font-weight: 500; padding: 0.5rem; border-radius: 8px; transition: all 0.3s ease; }
         #status.error { color: var(--color-secondary-accent); background-color: rgba(244, 114, 182, 0.1); }
         #status.loading { color: var(--color-primary-accent); background-color: rgba(34, 211, 238, 0.1); }
+
+        /* --- Fullscreen Styles --- */
+        body.fullscreen-mode { overflow: hidden; }
+        body.fullscreen-mode > *:not(#canvas-container):not(#drawing-tools-column) { display: none !important; }
+
+        body.fullscreen-mode #canvas-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 1000; padding: 0;
+        }
+        body.fullscreen-mode #canvas-container .io-wrapper { border-radius: 0; border: none; aspect-ratio: unset; }
+        body.fullscreen-mode #canvas-container h3 { display: none; }
+
+        body.fullscreen-mode #drawing-tools-column {
+            position: fixed;
+            z-index: 1010;
+            width: auto;
+            min-width: 320px;
+            max-width: 90vw;
+            background: rgba(22, 27, 34, 0.8);
+            backdrop-filter: blur(10px);
+            cursor: move;
+            padding: 0.75rem;
+            gap: 0.5rem;
+            overflow: hidden;
+        }
+        body.fullscreen-mode #drawing-tools-column h3 { display: none; }
+        
+        .resize-handle {
+            position: absolute; bottom: 0; right: 0;
+            width: 20px; height: 20px;
+            cursor: nwse-resize; z-index: 1011;
+            display: none; align-items: flex-end; justify-content: flex-end;
+        }
+        .resize-handle svg { width: 16px; height: 16px; color: var(--color-text-secondary); }
+        body.fullscreen-mode .resize-handle { display: flex; }
+
+        body.fullscreen-mode #drawing-tools-column .canvas-controls-container { gap: 0.5rem; }
+        body.fullscreen-mode #drawing-tools-column .control-group { padding: 0.5rem; gap: 0.4rem; border-radius: 8px; }
+        body.fullscreen-mode #drawing-tools-column .top-controls-row { gap: 0.5rem; }
+        body.fullscreen-mode #drawing-tools-column .button-group { gap: 0.5rem; }
+        body.fullscreen-mode #drawing-tools-column .tool-btn { width: 40px; height: 40px; }
+        body.fullscreen-mode #drawing-tools-column .tool-btn svg { width: 20px; height: 20px; }
+        body.fullscreen-mode #drawing-tools-column .control-group label { font-size: 0.8rem; margin-bottom: 0; }
+        body.fullscreen-mode #drawing-tools-column .button-group > * { padding: 0.5rem; font-size: 0.9rem; }
+
     </style>
 </head>
 <body>
@@ -196,220 +144,129 @@
     <h2 class="subtitle">Draw a scene, describe the action, and let the AI bring your vision to life.</h2>
 
     <div class="main-content">
-        <div class="io-container">
-             <h3>Your Creative Space</h3>
+        <div id="canvas-container" class="io-container">
+            <h3>Your Creative Space</h3>
             <div class="io-wrapper">
                 <canvas id="sketchCanvas" width="800" height="450"></canvas>
             </div>
         </div>
         <div class="io-container">
-             <h3>The AI-Powered Result</h3>
-            <div id="outputWrapper" class="io-wrapper output-video-wrapper">
-                <video id="outputVideo" controls autoplay muted loop playsinline style="display: none;"></video>
-                <div id="outputPlaceholder" class="placeholder">Your generated video will appear here</div>
+             <h3 id="outputTitle">The AI-Powered Result</h3>
+            <div id="outputContainer" class="io-wrapper">
+                <div id="outputPlaceholder" class="placeholder">Your generated images will appear here</div>
+                <div id="imageSelectionWrapper" class="image-selection-wrapper" style="display: none;"></div>
+                <div class="output-video-wrapper" id="videoWrapper" style="display: none;">
+                    <video id="outputVideo" controls autoplay muted loop playsinline></video>
+                </div>
                 <div id="outputError" class="output-error" style="display: none;"></div>
-                <div id="loader" class="loader"></div>
+                <div id="loaderWrapper" class="loader-wrapper">
+                    <svg class="loader-animation" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle class="loader-track" cx="50" cy="50" r="42" /><circle class="loader-spinner" cx="50" cy="50" r="42" /></svg>
+                    <p id="loaderText">Warming up the AI...</p>
+                </div>
             </div>
         </div>
     </div>
     
     <div class="controls-panel">
-        <div class="controls-column">
+        <div id="drawing-tools-column" class="controls-column">
             <h3>Drawing Tools</h3>
             <div class="canvas-controls-container">
-                <div class="control-group">
-                    <label>Tools</label>
-                    <div class="tool-buttons">
-                        <button id="drawBtn" class="tool-btn active-tool" title="Draw">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/></svg>
-                        </button>
-                        <button id="eraseBtn" class="tool-btn" title="Erase">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8.086 2.207a2 2 0 0 1 2.828 0l3.879 3.879a2 2 0 0 1 0 2.828l-5.5 5.5A2 2 0 0 1 7.879 15H5.12a2 2 0 0 1-1.414-.586l-2.5-2.5a2 2 0 0 1 0-2.828zm2.121.707a1 1 0 0 0-1.414 0L4.16 7.547l5.293 5.293 4.633-4.633a1 1 0 0 0 0-1.414zM4.16 12.879l-1.03-1.03.952-.952 1.03 1.03z"/></svg>
+                <div class="top-controls-row">
+                    <div class="control-group"><label>Tools</label><div class="tool-buttons"><button id="drawBtn" class="tool-btn active-tool" title="Draw"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/></svg></button><button id="eraseBtn" class="tool-btn" title="Erase"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8.086 2.207a2 2 0 0 1 2.828 0l3.879 3.879a2 2 0 0 1 0 2.828l-5.5 5.5A2 2 0 0 1 7.879 15H5.12a2 2 0 0 1-1.414-.586l-2.5-2.5a2 2 0 0 1 0-2.828zm2.121.707a1 1 0 0 0-1.414 0L4.16 7.547l5.293 5.293 4.633-4.633a1 1 0 0 0 0-1.414zM4.16 12.879l-1.03-1.03.952-.952 1.03 1.03z"/></svg></button></div></div>
+                    <div class="control-group"><label for="colorPicker">Color</label><input type="color" id="colorPicker" value="#000000"></div>
+                    <div class="control-group"><label for="imageCount">Images</label><select id="imageCount" name="imageCount"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select></div>
+                    <div class="control-group">
+                        <label>View</label>
+                        <button id="toggleFullscreenBtn" class="tool-btn" title="Enter Fullscreen">
+                            <svg class="enter-fullscreen-svg" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/></svg>
+                            <svg class="exit-fullscreen-svg" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" style="display: none;"><path d="M5.5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0v-4A.5.5 0 0 1 5.5 0M10 .5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 1-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 1 0v4a.5.5 0 0 1 .5.5h4a.5.5 0 0 1 .5-.5m10 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 1 0v4a.5.5 0 0 1 .5.5h4a.5.5 0 0 1 .5-.5z"/></svg>
                         </button>
                     </div>
                 </div>
-                <div class="control-group">
-                    <label for="colorPicker">Color</label>
-                    <input type="color" id="colorPicker" value="#000000">
-                </div>
-                <div class="control-group full-width">
-                    <div class="thickness-control">
-                        <label for="thicknessSlider">Brush Size:</label>
-                        <input type="range" id="thicknessSlider" min="1" max="50" value="5">
-                        <span id="thicknessValue">5</span>
-                    </div>
-                </div>
-                <!-- MODIFIED: Button group for clear and upload -->
-                <div class="button-group">
-                    <button id="clearBtn">Clear Canvas</button>
-                    <label for="uploadImageInput" class="upload-btn">Upload Image</label>
-                    <input type="file" id="uploadImageInput" accept="image/*" style="display: none;">
-                </div>
+                <div class="control-group"><div class="thickness-control"><label for="thicknessSlider">Brush Size:</label><input type="range" id="thicknessSlider" min="1" max="50" value="5"><span id="thicknessValue">5</span></div></div>
+                <div class="button-group"><button id="clearBtn">Clear Canvas</button><label for="uploadImageInput" class="upload-btn">Upload Image</label><input type="file" id="uploadImageInput" accept="image/*" style="display: none;"></div>
+            </div>
+            <div id="resizeHandle" class="resize-handle">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 11.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13a.5.5 0 0 1-.5-.5m-1-4a.5.5 0 0 1 .5-.5h15a.5.5 0 0 1 0 1h-15a.5.5 0 0 1-.5-.5m1-4a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13a.5.5 0 0 1-.5-.5"/></svg>
             </div>
         </div>
-
         <div class="controls-column">
             <h3>Animation Prompt</h3>
             <textarea id="promptInput" rows="5" placeholder="e.g., 'cinematic, photorealistic, a car driving down a road, camera zooms in...'"></textarea>
-            <button id="generateBtn">✨ Generate Video</button>
+            <div class="generation-buttons">
+                <button id="generateImagesBtn" class="gen-btn">✨ Generate Images</button>
+                <button id="generateVideoBtn" class="gen-btn" style="display: none;">🎬 Generate Video</button>
+            </div>
         </div>
     </div>
-    
     <div id="status" class="status-area"></div>
 
     <script>
         // --- Element Selection ---
-        const promptInput = document.getElementById('promptInput'); 
         const canvas = document.getElementById('sketchCanvas');
         const ctx = canvas.getContext('2d');
-        const clearBtn = document.getElementById('clearBtn');
-        const generateBtn = document.getElementById('generateBtn');
-        const eraseBtn = document.getElementById('eraseBtn');
         const drawBtn = document.getElementById('drawBtn');
+        const eraseBtn = document.getElementById('eraseBtn');
         const colorPicker = document.getElementById('colorPicker');
+        const imageCountSelect = document.getElementById('imageCount');
         const thicknessSlider = document.getElementById('thicknessSlider');
         const thicknessValue = document.getElementById('thicknessValue');
-        const outputWrapper = document.getElementById('outputWrapper');
-        const outputVideo = document.getElementById('outputVideo');
-        const outputPlaceholder = document.getElementById('outputPlaceholder');
-        const outputError = document.getElementById('outputError');
-        const statusDiv = document.getElementById('status');
-        const loader = document.getElementById('loader');
-        // --- NEW: Select upload input ---
+        const clearBtn = document.getElementById('clearBtn');
         const uploadImageInput = document.getElementById('uploadImageInput');
+        const promptInput = document.getElementById('promptInput');
+        const generateImagesBtn = document.getElementById('generateImagesBtn');
+        const generateVideoBtn = document.getElementById('generateVideoBtn');
+        const outputContainer = document.getElementById('outputContainer');
+        const outputPlaceholder = document.getElementById('outputPlaceholder');
+        const imageSelectionWrapper = document.getElementById('imageSelectionWrapper');
+        const videoWrapper = document.getElementById('videoWrapper');
+        const outputVideo = document.getElementById('outputVideo');
+        const outputError = document.getElementById('outputError');
+        const loaderWrapper = document.getElementById('loaderWrapper');
+        const loaderText = document.getElementById('loaderText');
+        const statusDiv = document.getElementById('status');
+        const outputTitle = document.getElementById('outputTitle');
+        
+        // Fullscreen Elements
+        const body = document.body;
+        const toggleFullscreenBtn = document.getElementById('toggleFullscreenBtn');
+        const enterFullscreenSvg = toggleFullscreenBtn.querySelector('.enter-fullscreen-svg');
+        const exitFullscreenSvg = toggleFullscreenBtn.querySelector('.exit-fullscreen-svg');
+        const canvasContainer = document.getElementById('canvas-container');
+        const drawingToolsColumn = document.getElementById('drawing-tools-column');
+        const resizeHandle = document.getElementById('resizeHandle');
 
         // --- State Variables ---
         let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
-        let currentMode = 'draw';
+        let currentTool = 'draw';
         let drawColor = '#000000';
-        let drawLineWidth = 5; 
-        const eraseLineWidth = 30; // Kept erase width constant for simplicity
+        let drawLineWidth = 5;
+        let currentJobId = null;
+        let selectedImageGcsUri = null;
+        let textInterval = null;
 
-        // --- Core Functions ---
+        const imageLoadingMessages = [ "Teaching the AI to see your sketch...", "Mixing digital paints...", "Consulting the muse...", "Finding the perfect pixels...", "Translating lines into light...", "Sketching out the details...", "Imagining new possibilities..." ];
+        const videoLoadingMessages = [ "Adding a touch of motion...", "Directing the digital actors...", "Rendering cinematic frames...", "Animating your masterpiece...", "Bringing the scene to life...", "Action!", "Generating final cut..." ];
+
+        // --- Canvas & Drawing Functions ---
         function initializeCanvas() {
-            ctx.fillStyle = "white";
-            ctx.fillRect(0, 0, canvas.width, canvas.height); 
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            drawColor = '#000000';
-            colorPicker.value = '#000000';
-            drawLineWidth = 5;
-            thicknessSlider.value = 5;
-            thicknessValue.textContent = 5;
-
-            setDrawMode(); 
-            outputVideo.style.display = 'none';
-            outputVideo.src = '';
-            outputPlaceholder.style.display = 'flex';
-            outputError.style.display = 'none';
-            loader.style.display = 'none';
-            statusDiv.textContent = '';
-            statusDiv.className = 'status-area';
-            promptInput.value = '';
-            
-            const allControls = [generateBtn, clearBtn, drawBtn, eraseBtn, colorPicker, thicknessSlider, promptInput, uploadImageInput];
-            allControls.forEach(c => c.disabled = false);
+            ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round'; setDrawMode();
         }
 
-        function setDrawMode() {
-            currentMode = 'draw';
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.strokeStyle = drawColor;
-            ctx.lineWidth = drawLineWidth;
-            canvas.classList.remove('erase-mode');
-            drawBtn.classList.add('active-tool');
-            eraseBtn.classList.remove('active-tool');
-        }
-
-        function setEraseMode() {
-            currentMode = 'erase';
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.lineWidth = eraseLineWidth;
-            canvas.classList.add('erase-mode');
-            eraseBtn.classList.add('active-tool');
-            drawBtn.classList.remove('active-tool');
-        }
-        
-        function getPos(evt) {
+        function getCanvasCoordinates(event) {
             const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
-            const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+            const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
+            let clientX, clientY;
+            if (event.touches && event.touches.length > 0) { clientX = event.touches[0].clientX; clientY = event.touches[0].clientY;
+            } else { clientX = event.clientX; clientY = event.clientY; }
             return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
         }
 
-        function startDrawing(e) {
-            if (e.touches) e.preventDefault();
-            isDrawing = true;
-            const pos = getPos(e);
-            [lastX, lastY] = [pos.x, pos.y];
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.fillStyle = (currentMode === 'draw') ? ctx.strokeStyle : 'rgba(0,0,0,1)';
-            ctx.arc(lastX, lastY, ctx.lineWidth / 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-        }
+        function startDrawing(event) { event.preventDefault(); isDrawing = true; const { x, y } = getCanvasCoordinates(event); ctx.beginPath(); ctx.moveTo(x, y); }
+        function draw(event) { if (!isDrawing) return; event.preventDefault(); const { x, y } = getCanvasCoordinates(event); ctx.lineTo(x, y); ctx.strokeStyle = currentTool === 'erase' ? '#FFFFFF' : drawColor; ctx.lineWidth = drawLineWidth; ctx.stroke(); }
+        function stopDrawing() { if (isDrawing) { ctx.closePath(); isDrawing = false; } }
 
-        function draw(e) {
-            if (!isDrawing) return;
-            if (e.touches) e.preventDefault();
-            const pos = getPos(e);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
-        }
-
-        function stopDrawing() {
-            if (isDrawing) { isDrawing = false; ctx.beginPath(); }
-        }
-
-        // --- NEW: Function to handle image upload ---
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    // Clear canvas first
-                    ctx.fillStyle = "white";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    
-                    // Calculate aspect ratio to fit image inside canvas
-                    const canvasAspectRatio = canvas.width / canvas.height;
-                    const imgAspectRatio = img.width / img.height;
-                    let drawWidth, drawHeight, offsetX, offsetY;
-
-                    if (imgAspectRatio > canvasAspectRatio) {
-                        drawWidth = canvas.width;
-                        drawHeight = canvas.width / imgAspectRatio;
-                        offsetX = 0;
-                        offsetY = (canvas.height - drawHeight) / 2;
-                    } else {
-                        drawHeight = canvas.height;
-                        drawWidth = canvas.height * imgAspectRatio;
-                        offsetY = 0;
-                        offsetX = (canvas.width - drawWidth) / 2;
-                    }
-                    
-                    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-            
-            // Reset file input to allow uploading the same file again
-            event.target.value = null;
-        }
-
-        // --- Event Listeners ---
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseup', stopDrawing);
@@ -417,82 +274,201 @@
         canvas.addEventListener('touchstart', startDrawing, { passive: false });
         canvas.addEventListener('touchmove', draw, { passive: false });
         canvas.addEventListener('touchend', stopDrawing);
-        
-        clearBtn.addEventListener('click', initializeCanvas);
+
+        function setDrawMode() { currentTool = 'draw'; drawBtn.classList.add('active-tool'); eraseBtn.classList.remove('active-tool'); }
+        function setEraseMode() { currentTool = 'erase'; eraseBtn.classList.add('active-tool'); drawBtn.classList.remove('active-tool'); }
+
         drawBtn.addEventListener('click', setDrawMode);
         eraseBtn.addEventListener('click', setEraseMode);
-        
-        colorPicker.addEventListener('input', (event) => {
-            drawColor = event.target.value;
-            if (currentMode === 'draw') { ctx.strokeStyle = drawColor; }
-            setDrawMode();
-        });
-        
-        thicknessSlider.addEventListener('input', (event) => {
-            drawLineWidth = event.target.value;
-            thicknessValue.textContent = drawLineWidth;
-            if (currentMode === 'draw') { ctx.lineWidth = drawLineWidth; }
-        });
-
-        // --- NEW: Add event listener for the file input ---
-        uploadImageInput.addEventListener('change', handleImageUpload);
-
-        generateBtn.addEventListener('click', async () => {
-            const allControls = [generateBtn, clearBtn, drawBtn, eraseBtn, colorPicker, thicknessSlider, promptInput, uploadImageInput];
-            allControls.forEach(c => c.disabled = true);
-            
-            statusDiv.textContent = 'Generating video... this may take a few minutes.';
-            statusDiv.className = 'status-area loading';
-            outputVideo.style.display = 'none';
-            outputError.style.display = 'none';
-            outputPlaceholder.style.display = 'none';
-            loader.style.display = 'block';
-
-            const imageDataUrl = canvas.toDataURL('image/png');
-            const userPrompt = promptInput.value.trim();
-            const payload = { image_data: imageDataUrl };
-            if (userPrompt) { payload.prompt = userPrompt; }
-
-            try {
-                const response = await fetch('/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
-                const result = await response.json();
-                if (response.ok && result.generated_video_url) {
-                    outputVideo.src = result.generated_video_url;
-                    outputVideo.load();
-                    outputVideo.style.display = 'block';
-                    outputPlaceholder.style.display = 'none';
-                    outputError.style.display = 'none';
-                    statusDiv.textContent = 'Video generated successfully!';
-                    statusDiv.className = 'status-area';
-                } else {
-                    const errorMsg = result.error || response.statusText || `Failed with status ${response.status}`;
-                    console.error('Generation failed:', errorMsg);
-                    statusDiv.textContent = `Error: ${errorMsg}`;
-                    statusDiv.className = 'status-area error';
-                    outputError.textContent = `Generation Failed: ${errorMsg}`;
-                    outputError.style.display = 'flex';
-                    outputPlaceholder.style.display = 'none';
-                    outputVideo.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Network or fetch error:', error);
-                const errorText = `Network error or failed to fetch: ${error.message || String(error)}`;
-                statusDiv.textContent = `Error: ${errorText}`;
-                statusDiv.className = 'status-area error';
-                outputError.textContent = `Error: ${errorText}`;
-                outputError.style.display = 'flex';
-                outputPlaceholder.style.display = 'none';
-                outputVideo.style.display = 'none';
-            } finally {
-                loader.style.display = 'none';
-                allControls.forEach(c => c.disabled = false);
+        colorPicker.addEventListener('input', (e) => { drawColor = e.target.value; });
+        thicknessSlider.addEventListener('input', (e) => { drawLineWidth = e.target.value; thicknessValue.textContent = drawLineWidth; });
+        clearBtn.addEventListener('click', () => { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height); });
+        uploadImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    const canvasAspectRatio = canvas.width / canvas.height; const imgAspectRatio = img.width / img.height;
+                    let drawWidth, drawHeight, offsetX, offsetY;
+                    if (imgAspectRatio > canvasAspectRatio) { drawWidth = canvas.width; drawHeight = canvas.width / imgAspectRatio; offsetX = 0; offsetY = (canvas.height - drawHeight) / 2;
+                    } else { drawHeight = canvas.height; drawWidth = canvas.height * imgAspectRatio; offsetY = 0; offsetX = (canvas.width - drawWidth) / 2; }
+                    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+                };
+                img.src = URL.createObjectURL(file);
             }
         });
 
+        // --- Fullscreen, Draggable, and Resizable Logic ---
+        toggleFullscreenBtn.addEventListener('click', () => {
+            body.classList.toggle('fullscreen-mode');
+            const isFullscreen = body.classList.contains('fullscreen-mode');
+            
+            if (isFullscreen) {
+                document.body.appendChild(canvasContainer);
+                document.body.appendChild(drawingToolsColumn);
+                drawingToolsColumn.style.top = `${window.innerHeight - drawingToolsColumn.offsetHeight - 32}px`;
+                drawingToolsColumn.style.left = `${(window.innerWidth - drawingToolsColumn.offsetWidth) / 2}px`;
+                toggleFullscreenBtn.title = "Exit Fullscreen";
+                enterFullscreenSvg.style.display = 'none';
+                exitFullscreenSvg.style.display = 'block';
+            } else {
+                document.querySelector('.main-content').prepend(canvasContainer);
+                document.querySelector('.controls-panel').prepend(drawingToolsColumn);
+                drawingToolsColumn.style.top = ''; drawingToolsColumn.style.left = '';
+                drawingToolsColumn.style.width = ''; drawingToolsColumn.style.height = '';
+                toggleFullscreenBtn.title = "Enter Fullscreen";
+                enterFullscreenSvg.style.display = 'block';
+                exitFullscreenSvg.style.display = 'none';
+            }
+        });
+
+        function makeDraggable(element) {
+            let isDragging = false, offsetX, offsetY;
+            const startDrag = (e) => {
+                const target = e.target;
+                if (target.id === 'resizeHandle' || target.closest('#resizeHandle') || ['input', 'button', 'select', 'label', 'svg', 'path', 'span'].includes(target.tagName.toLowerCase())) { return; }
+                if (!body.classList.contains('fullscreen-mode')) return;
+                isDragging = true;
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                offsetX = clientX - element.offsetLeft;
+                offsetY = clientY - element.offsetTop;
+                document.addEventListener('mousemove', onDrag, { passive: false });
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('touchmove', onDrag, { passive: false });
+                document.addEventListener('touchend', endDrag);
+            };
+            const onDrag = (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                let newX = clientX - offsetX, newY = clientY - offsetY;
+                const maxX = window.innerWidth - element.offsetWidth, maxY = window.innerHeight - element.offsetHeight;
+                newX = Math.max(0, Math.min(newX, maxX)); newY = Math.max(0, Math.min(newY, maxY));
+                element.style.left = `${newX}px`; element.style.top = `${newY}px`;
+            };
+            const endDrag = () => { isDragging = false; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', endDrag); document.removeEventListener('touchmove', onDrag); document.removeEventListener('touchend', endDrag); };
+            element.addEventListener('mousedown', startDrag);
+            element.addEventListener('touchstart', startDrag, { passive: true });
+        }
+
+        function makeResizable(panel, handle) {
+            let isResizing = false, lastX, lastY, startWidth, startHeight;
+            const startResize = (e) => {
+                e.preventDefault();
+                isResizing = true;
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                lastX = clientX; lastY = clientY;
+                startWidth = parseInt(document.defaultView.getComputedStyle(panel).width, 10);
+                startHeight = parseInt(document.defaultView.getComputedStyle(panel).height, 10);
+                document.addEventListener('mousemove', onResize, { passive: false });
+                document.addEventListener('mouseup', endResize);
+                document.addEventListener('touchmove', onResize, { passive: false });
+                document.addEventListener('touchend', endResize);
+            };
+            const onResize = (e) => {
+                if (!isResizing) return;
+                e.preventDefault();
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                const newWidth = startWidth + (clientX - lastX);
+                const newHeight = startHeight + (clientY - lastY);
+                const minWidth = parseInt(document.defaultView.getComputedStyle(panel).minWidth, 10);
+                if (newWidth > minWidth) {
+                    panel.style.width = `${newWidth}px`;
+                }
+                panel.style.height = `${newHeight}px`;
+            };
+            const endResize = () => { isResizing = false; document.removeEventListener('mousemove', onResize); document.removeEventListener('mouseup', endResize); document.removeEventListener('touchmove', onResize); document.removeEventListener('touchend', endResize); };
+            handle.addEventListener('mousedown', startResize);
+            handle.addEventListener('touchstart', startResize, { passive: false });
+        }
+
+        makeDraggable(drawingToolsColumn);
+        makeResizable(drawingToolsColumn, resizeHandle);
+
+        // --- UI State & API Logic ---
+        function setUIForLoading(isLoading, messageType = 'image') {
+            generateImagesBtn.disabled = isLoading; generateVideoBtn.disabled = isLoading;
+            [outputPlaceholder, imageSelectionWrapper, videoWrapper, outputError].forEach(el => el.style.display = 'none');
+            if (isLoading) {
+                loaderWrapper.style.display = 'flex';
+                const messages = messageType === 'video' ? videoLoadingMessages : imageLoadingMessages;
+                let messageIndex = 0; loaderText.textContent = messages[messageIndex];
+                if (textInterval) clearInterval(textInterval);
+                textInterval = setInterval(() => {
+                    messageIndex = (messageIndex + 1) % messages.length;
+                    loaderText.style.opacity = 0; setTimeout(() => { loaderText.textContent = messages[messageIndex]; loaderText.style.opacity = 1; }, 300);
+                }, 2500);
+            } else { loaderWrapper.style.display = 'none'; if (textInterval) clearInterval(textInterval); }
+        }
+        
+        function resetUIState() {
+            setUIForLoading(false); outputPlaceholder.style.display = 'flex'; imageSelectionWrapper.innerHTML = '';
+            outputVideo.src = ''; currentJobId = null; selectedImageGcsUri = null; statusDiv.textContent = '';
+            statusDiv.className = 'status-area'; generateImagesBtn.textContent = '✨ Generate Images';
+            generateImagesBtn.style.display = 'block'; generateImagesBtn.disabled = false; generateVideoBtn.style.display = 'none';
+            outputTitle.textContent = "The AI-Powered Result";
+        }
+
+        function displayError(errorMsg) {
+            setUIForLoading(false); outputError.textContent = errorMsg; outputError.style.display = 'flex';
+            statusDiv.textContent = `Error: ${errorMsg}`; statusDiv.className = 'status-area error';
+            generateImagesBtn.textContent = '✨ Generate Images'; generateImagesBtn.style.display = 'block';
+            generateImagesBtn.disabled = false; generateVideoBtn.style.display = 'none';
+        }
+
+        generateImagesBtn.addEventListener('click', async () => {
+            if (generateImagesBtn.textContent.includes('New')) { resetUIState(); initializeCanvas(); return; }
+            setUIForLoading(true, 'image'); statusDiv.textContent = 'Generating image options...'; statusDiv.className = 'status-area loading';
+            try {
+                const response = await fetch('/generate-images', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image_data: canvas.toDataURL('image/png'), prompt: promptInput.value, num_images: parseInt(imageCountSelect.value, 10) })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Failed to generate images.');
+                currentJobId = result.job_id; imageSelectionWrapper.innerHTML = ''; 
+                result.images.forEach(imgInfo => {
+                    const div = document.createElement('div'); div.className = 'image-option';
+                    div.dataset.gcsUri = imgInfo.gcs_uri; div.innerHTML = `<img src="${imgInfo.public_url}" alt="Generated image option">`;
+                    div.addEventListener('click', handleImageSelection); imageSelectionWrapper.appendChild(div);
+                });
+                setUIForLoading(false); statusDiv.textContent = 'Select an image, then click Generate Video.';
+                statusDiv.className = 'status-area'; imageSelectionWrapper.style.display = 'grid';
+                outputTitle.textContent = "Select an Image to Animate";
+                generateImagesBtn.style.display = 'none'; generateVideoBtn.style.display = 'block'; generateVideoBtn.disabled = true;
+            } catch (error) { displayError(error.message); }
+        });
+        
+        function handleImageSelection(event) {
+            const selectedDiv = event.currentTarget; selectedImageGcsUri = selectedDiv.dataset.gcsUri;
+            document.querySelectorAll('.image-option').forEach(div => div.classList.remove('selected'));
+            selectedDiv.classList.add('selected'); generateVideoBtn.disabled = false;
+        }
+
+        generateVideoBtn.addEventListener('click', async () => {
+            if (!selectedImageGcsUri || !currentJobId) { displayError("Please select an image first."); return; }
+            setUIForLoading(true, 'video'); statusDiv.textContent = 'Generating video from selected image...';
+            statusDiv.className = 'status-area loading'; imageSelectionWrapper.style.display = 'grid'; 
+            try {
+                const response = await fetch('/generate-video', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_id: currentJobId, selected_image_gcs_uri: selectedImageGcsUri, prompt: promptInput.value })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Failed to generate video.');
+                outputVideo.src = result.generated_video_url; outputVideo.load();
+                setUIForLoading(false); statusDiv.textContent = 'Video generated successfully!'; statusDiv.className = 'status-area';
+                videoWrapper.style.display = 'block'; outputTitle.textContent = "Your Generated Video";
+                generateVideoBtn.style.display = 'none'; generateImagesBtn.style.display = 'block';
+                generateImagesBtn.textContent = '🔄 Start New Creation'; generateImagesBtn.disabled = false;
+            } catch (error) { displayError(error.message); }
+        });
+        
         window.onload = initializeCanvas;
     </script>
 </body>

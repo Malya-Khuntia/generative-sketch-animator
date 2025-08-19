@@ -4,7 +4,7 @@ import time
 import base64
 import uuid
 import logging
-import datetime  # Import the datetime module
+import datetime
 import PIL.Image
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
@@ -91,12 +91,13 @@ def upload_to_gcs(data: bytes or str, bucket_name: str, destination_blob_name: s
         
         if isinstance(data, str):
             blob.upload_from_string(data, content_type=content_type)
-        else: # bytes
+        else:  # bytes
             blob.upload_from_string(data, content_type=content_type)
             
         gcs_uri = f"gs://{bucket_name}/{destination_blob_name}"
-        logger.info(f"Data uploaded to {gcs_uri}")
-        return gcs_uri
+        public_url = f"https://storage.googleapis.com/{bucket_name}/{destination_blob_name}"
+        logger.info(f"Data uploaded to {gcs_uri}, public URL: {public_url}")
+        return {"gcs_uri": gcs_uri, "public_url": public_url}
     except google_exceptions.GoogleAPIError as e:
         logger.error(f"GCS upload failed: {e}")
         raise
@@ -106,9 +107,9 @@ def upload_to_gcs(data: bytes or str, bucket_name: str, destination_blob_name: s
 def index():
     return render_template('index.html')
 
-@app.route('/generate', methods=['POST'])
-def generate_video_from_sketch():
-    if not all([gemini_image_client, veo_video_client, gcs_client]):
+@app.route('/generate-images', methods=['POST'])
+def generate_images():
+    if not all([gemini_image_client, gcs_client]):
         logger.error("One or more clients not initialized")
         return jsonify({"error": "Server-side client initialization failed"}), 500
 
@@ -118,8 +119,18 @@ def generate_video_from_sketch():
 
     base64_image_data = request.json['image_data']
     user_prompt = request.json.get('prompt', '').strip()
+    
+    # Get and validate the number of images to generate from the request
+    try:
+        num_images = int(request.json.get('num_images', 4))
+        if not 1 <= num_images <= 4:
+            logger.warning(f"Invalid num_images value received: {num_images}. Defaulting to 4.")
+            num_images = 4
+    except (ValueError, TypeError):
+        logger.warning("num_images was not a valid integer. Defaulting to 4.")
+        num_images = 4
 
-    # --- NEW: Create a unique folder for this generation job ---
+    # Create a unique folder for this generation job
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     job_id = str(uuid.uuid4())
     job_folder_path = f"generations/{timestamp}_{job_id[:8]}"
@@ -132,7 +143,7 @@ def generate_video_from_sketch():
         base64_data = base64_image_data
     image_bytes = base64.b64decode(base64_data)
 
-    # --- Step 1: Store original sketch and prompt in the new job folder ---
+    # Store original sketch and prompt in the new job folder
     try:
         logger.info(f"Uploading original user inputs for job {job_folder_path}")
         sketch_blob_name = f"{job_folder_path}/sketches/user-sketch.png"
@@ -142,64 +153,88 @@ def generate_video_from_sketch():
         upload_to_gcs(user_prompt or "No prompt provided.", GCS_BUCKET_NAME, prompt_blob_name, 'text/plain')
         
     except Exception as e:
-        # Log the error but continue, as this is for archival and not critical for generation
         logger.error(f"Failed to upload original assets to GCS: {e}")
         pass
 
-    # --- Step 2: Generate Image with Gemini ---
+    # Generate the requested number of images with Gemini
+    generated_images = []
     try:
-        logger.info("Generating image from sketch with Gemini")
+        logger.info(f"Generating {num_images} images from sketch with Gemini")
         sketch_pil_image = PIL.Image.open(io.BytesIO(image_bytes))
 
         default_prompt = "Convert this sketch into a photorealistic image as if it were taken from a real DSLR camera. The elements and objects should look real."
-        response = gemini_image_client.models.generate_content(
-            model=MODEL_ID_IMAGE,
-            contents=[default_prompt, sketch_pil_image],
-            config=types.GenerateContentConfig(response_modalities=['TEXT', 'IMAGE'])
-        )
+        for i in range(num_images):
+            logger.info(f"Generating image {i+1}")
+            response = gemini_image_client.models.generate_content(
+                model=MODEL_ID_IMAGE,
+                contents=[default_prompt, sketch_pil_image],
+                config=types.GenerateContentConfig(response_modalities=['TEXT', 'IMAGE'])
+            )
 
-        if not response.candidates:
-            logger.error("Gemini returned no candidates")
-            raise ValueError("Gemini image generation returned no candidates")
+            if not response.candidates:
+                logger.error(f"Gemini returned no candidates for image {i+1}")
+                raise ValueError(f"Gemini image generation returned no candidates for image {i+1}")
 
-        generated_image_bytes = None
-        for part in response.candidates[0].content.parts:
-            if part.inline_data and part.inline_data.mime_type.startswith('image/'):
-                generated_image_bytes = part.inline_data.data
-                break
+            generated_image_bytes = None
+            for part in response.candidates[0].content.parts:
+                if part.inline_data and part.inline_data.mime_type.startswith('image/'):
+                    generated_image_bytes = part.inline_data.data
+                    break
+            
+            if not generated_image_bytes:
+                logger.error(f"Gemini response contained no image for image {i+1}")
+                raise ValueError(f"Gemini did not return an image for image {i+1}")
+            
+            # Upload generated image to GCS
+            image_blob_name = f"{job_folder_path}/images/generated-image-{i+1}.png"
+            upload_result = upload_to_gcs(generated_image_bytes, GCS_BUCKET_NAME, image_blob_name, 'image/png')
+            generated_images.append({
+                "public_url": upload_result["public_url"],
+                "gcs_uri": upload_result["gcs_uri"]
+            })
         
-        if not generated_image_bytes:
-            logger.error("Gemini response contained no image")
-            raise ValueError("Gemini did not return an image")
-        
-        logger.info("Image generated successfully")
+        logger.info("All images generated and uploaded successfully")
+        return jsonify({"job_id": job_id, "images": generated_images})
 
     except google_exceptions.GoogleAPIError as e:
         logger.error(f"Gemini API error: {e}")
-        return jsonify({"error": f"Failed to generate image: {e}"}), 500
+        return jsonify({"error": f"Failed to generate images: {e}"}), 500
     except ValueError as e:
         logger.error(f"Image generation failed: {e}")
-        return jsonify({"error": f"Failed to generate image: {e}"}), 500
+        return jsonify({"error": f"Failed to generate images: {e}"}), 500
     except Exception as e:
         logger.error(f"Unexpected error in image generation: {e}")
         return jsonify({"error": f"Unexpected error in image generation: {e}"}), 500
 
-    # --- Step 3 & 4: Upload Image to GCS and Generate Video with Veo ---
+@app.route('/generate-video', methods=['POST'])
+def generate_video():
+    if not all([veo_video_client, gcs_client]):
+        logger.error("One or more clients not initialized")
+        return jsonify({"error": "Server-side client initialization failed"}), 500
+
+    if not request.json or 'selected_image_gcs_uri' not in request.json or 'job_id' not in request.json:
+        logger.error("Missing required fields in request")
+        return jsonify({"error": "Missing selected_image_gcs_uri or job_id in request"}), 400
+
+    selected_image_gcs_uri = request.json['selected_image_gcs_uri']
+    user_prompt = request.json.get('prompt', '').strip()
+    job_id = request.json['job_id']
+
+    # Reconstruct job folder path
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    job_folder_path = f"generations/{timestamp}_{job_id[:8]}"
+
     try:
-        logger.info("Uploading generated image to GCS")
-        image_blob_name = f"{job_folder_path}/images/generated-image.png"
+        logger.info(f"Generating video from selected image {selected_image_gcs_uri}")
         output_gcs_prefix = f"gs://{GCS_BUCKET_NAME}/{job_folder_path}/videos/"
 
-        image_gcs_uri = upload_to_gcs(generated_image_bytes, GCS_BUCKET_NAME, image_blob_name, 'image/png')
-        
-        logger.info("Calling Veo to generate video")
         default_video_prompt = "Animate this image. Add subtle, cinematic motion."
         video_prompt = user_prompt if user_prompt else default_video_prompt
 
         operation = veo_video_client.models.generate_videos(
             model=MODEL_ID_VIDEO,
             prompt=video_prompt,
-            image=types.Image(gcs_uri=image_gcs_uri, mime_type="image/png"),
+            image=types.Image(gcs_uri=selected_image_gcs_uri, mime_type="image/png"),
             config=types.GenerateVideosConfig(
                 aspect_ratio="16:9",
                 output_gcs_uri=output_gcs_prefix,
@@ -210,7 +245,6 @@ def generate_video_from_sketch():
             ),
         )
 
-        # For production, refactor to async (e.g., return job ID and poll via separate endpoint)
         timeout_seconds = 300
         start_time = time.time()
         while not operation.done:
